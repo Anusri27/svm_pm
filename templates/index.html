@@ -13,7 +13,7 @@
 </head>
 
 <body>
- <div class="login">
+ <div class="predict">
 	<h1>Predict Temperature Values</h1>
 
      <!-- Main Input For Receiving Query to our ML -->
@@ -24,13 +24,20 @@
 
         <button type="submit" class="btn btn-primary btn-block btn-large">Predict</button>
     </form>
+    <!-- <form action="{{ url_for('plot') }}" method="post">
+      <button type="submit" class="btn btn-primary btn-block btn-large">Plot</button>
+  </form> -->
 
    <br>
    <br>
+
    {{ prediction_text }}
 
  </div>
-
-
+<br>
+<br>
+ <div style="width=80%">
+       <img src="/plot.png" alt="Predictions Visualization"style="width:1000px;height:400px;">
+     </div>
 </body>
 </html>

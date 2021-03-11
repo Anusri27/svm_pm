@@ -1,11 +1,15 @@
 import numpy as np
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_file, Response
 import pickle
 import pandas as pd
 from flask_sqlalchemy import SQLAlchemy
 import pymysql
 import secrets
-
+from matplotlib import pyplot as plt
+import matplotlib.dates as mdates
+from matplotlib.dates import DateFormatter
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from io import BytesIO
 
 conn="mysql+pymysql://{0}:{1}@{2}/{3}".format(secrets.dbuser,secrets.dbpass,secrets.dbhost,secrets.dbname)
 
@@ -31,6 +35,15 @@ future.columns = ['time']
 future['time']= pd.to_datetime(future['time'])
 datess=pd.DataFrame({'time':forecast_period_dates})
 
+Query = pd.read_sql_query('''select * from predictedtemp''', conn)
+Query['time']=pd.to_datetime(Query['time'])
+dt=Query[['time','predictions']]
+acceptable_temp=dt[dt['predictions']<27.5]
+unacceptable_temp=dt[dt['predictions']>=27.5]
+g=acceptable_temp['time']
+h=unacceptable_temp['time']
+i=acceptable_temp['predictions']
+j=unacceptable_temp['predictions']
 
 @app.route('/')
 def home():
@@ -50,6 +63,25 @@ def predict():
     result.to_sql('predictedtemp', conn, method='multi',index=True, if_exists='replace')
 
     return render_template('index.html', prediction_text='Predictions = {} , Saved to MYSQL DATABASE'.format(prediction))
+
+@app.route('/plot.png',methods=['GET','POST'])
+def plot():
+    fig, ax3 = plt.subplots(figsize=(20,6))
+    # ax3.plot(g,i,color='blue',label='Acceptable')
+    ax3.scatter(h,j,color='red',label='Unacceptable')
+    plt.ylim(0,100)
+    ax3.legend()
+    ax3.set(xlabel="Date", ylabel="temperature",
+           title="Coating Exhaust")
+    # canvas= FigureCanvas(fig)
+    # img=BytesIO()
+    # fig.savefig('images/temp.png')
+    # img.seek(0)
+    # return render_template('plot.html', url='/images/temp.png')
+    output = BytesIO()
+    FigureCanvas(fig).print_png(output)
+    return Response(output.getvalue(), mimetype="image/png")
+
 
 if __name__ == "__main__":
     app.run(debug=True)
